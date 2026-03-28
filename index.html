@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>LOL - Last One Laughing</title>
+<style>
+    body {
+        background: linear-gradient(45deg, hotpink, orange, yellow);
+        font-family: Impact, Arial Black, sans-serif;
+        text-align: center;
+        margin: 0;
+    }
+
+    h1 {
+        font-size: 60px;
+        color: white;
+        text-shadow: 4px 4px black;
+        letter-spacing: 2px;
+    }
+
+    #layout {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 20px;
+    }
+
+    .side {
+        width: 25%;
+    }
+
+    #center {
+        width: 50%;
+    }
+
+    #bigButton {
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        background: red;
+        border: 12px solid darkred;
+        color: white;
+        font-size: 35px;
+        cursor: pointer;
+        margin: 20px;
+        box-shadow: 0 0 40px black;
+    }
+
+    #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        color: white;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        font-size: 100px;
+        z-index: 10;
+        text-shadow: 6px 6px red;
+        cursor: pointer;
+    }
+
+    .player {
+        font-size: 32px;
+        margin: 12px;
+        color: white;
+        text-shadow: 2px 2px black;
+    }
+
+    .heart {
+        cursor: pointer;
+        font-size: 36px;
+        margin-left: 12px;
+    }
+
+    .lost {
+        color: gray;
+        filter: grayscale(100%);
+    }
+
+    .eliminated {
+        text-decoration: line-through;
+        opacity: 0.3;
+    }
+
+    #timer {
+        font-size: 45px;
+        margin: 10px;
+        color: white;
+        text-shadow: 2px 2px black;
+    }
+
+    button.small {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 5px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<h1>😂 LOL - Last One Laughing 😂</h1>
+
+<div id="timer">00:00</div>
+<button class="small" onclick="startTimer()">Start</button>
+<button class="small" onclick="pauseTimer()">Pause</button>
+<button class="small" onclick="resetTimer()">Reset</button>
+
+<br>
+
+<input type="file" id="soundUpload" accept="audio/*">
+
+<div id="layout">
+    <div class="side" id="leftPlayers"></div>
+
+    <div id="center">
+        <button id="bigButton">MÖP</button>
+    </div>
+
+    <div class="side" id="rightPlayers"></div>
+</div>
+
+<div id="overlay">🚨 SPIELSTOP 🚨</div>
+
+<script>
+let stopped = false;
+let audio = null;
+
+// Sound Upload
+document.getElementById("soundUpload").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        audio = new Audio(URL.createObjectURL(file));
+    }
+});
+
+// Sound
+function playBeep() {
+    if (audio) {
+        audio.currentTime = 0;
+        audio.play();
+        return;
+    }
+
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => osc.stop(), 500);
+}
+
+// Overlay schließen
+document.getElementById("overlay").onclick = () => {
+    stopped = false;
+    document.getElementById("overlay").style.display = "none";
+};
+
+// Button Funktion
+function toggleMop() {
+    if (!stopped) {
+        stopped = true;
+        playBeep();
+        document.getElementById("overlay").style.display = "flex";
+    } else {
+        stopped = false;
+        document.getElementById("overlay").style.display = "none";
+    }
+}
+
+document.getElementById("bigButton").onclick = toggleMop;
+
+// 🔥 NEU: Leertaste triggert Button
+document.addEventListener("keydown", function(e) {
+    if (e.code === "Space") {
+        e.preventDefault(); // verhindert Scrollen
+        toggleMop();
+    }
+});
+
+// Timer
+let time = 0;
+let interval = null;
+
+function updateDisplay() {
+    let m = String(Math.floor(time / 60)).padStart(2, '0');
+    let s = String(time % 60).padStart(2, '0');
+    document.getElementById("timer").textContent = m + ":" + s;
+}
+
+function startTimer() {
+    if (interval) return;
+    interval = setInterval(() => {
+        time++;
+        updateDisplay();
+    }, 1000);
+}
+
+function pauseTimer() {
+    clearInterval(interval);
+    interval = null;
+}
+
+function resetTimer() {
+    pauseTimer();
+    time = 0;
+    updateDisplay();
+}
+
+// Spieler
+const names = [
+    "Pauli Mauli", "Jakob", "Jonas", "Nele H.", "Justus",
+    "Wiebke", "Ju", "Darwin", "Nils",
+    "Freya", "Flips", "Julius", "Lenni",
+    "Tonne", "Joline", "Nele V.", "Dora",
+    "Clara", "Sina"
+];
+
+const left = document.getElementById("leftPlayers");
+const right = document.getElementById("rightPlayers");
+
+names.forEach((name, index) => {
+    const div = document.createElement("div");
+    div.className = "player";
+
+    let lives = 2;
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = name;
+
+    const heart1 = document.createElement("span");
+    const heart2 = document.createElement("span");
+
+    heart1.innerHTML = "❤️";
+    heart2.innerHTML = "❤️";
+
+    heart1.className = "heart";
+    heart2.className = "heart";
+
+    function loseLife(heart) {
+        if (heart.classList.contains("lost")) return;
+
+        heart.classList.add("lost");
+        lives--;
+
+        if (lives === 0) {
+            div.classList.add("eliminated");
+        }
+    }
+
+    heart1.onclick = () => loseLife(heart1);
+    heart2.onclick = () => loseLife(heart2);
+
+    div.appendChild(nameSpan);
+    div.appendChild(heart1);
+    div.appendChild(heart2);
+
+    if (index < Math.ceil(names.length / 2)) {
+        left.appendChild(div);
+    } else {
+        right.appendChild(div);
+    }
+});
+</script>
+
+</body>
+</html>
